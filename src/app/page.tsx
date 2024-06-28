@@ -1,113 +1,99 @@
+"use client"
+import { useEffect, useState } from "react";
+import axios, { AxiosError } from "axios";
 import Image from "next/image";
+import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps"
+interface ApiResponse {
+  // Define aquí la estructura de tu respuesta
+  message: string;
+}
 
 export default function Home() {
+  const [data, setData] = useState<ApiResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<AxiosError | null>(null);
+  const [hoveredMarker, setHoveredMarker] = useState<string | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+const geoUrl ="/ne_10m_admin_0_countries.json"
+const markers = [
+  {
+    markerOffset: -15,
+    name: "Buenos Aires",
+    coordinates: [-58.3816, -34.6037]
+  },
+  { markerOffset: -15, name: "La Paz", coordinates: [-68.1193, -16.4897] },
+  { markerOffset: 25, name: "Brasilia", coordinates: [-47.8825, -15.7942] },
+  { markerOffset: 25, name: "Santiago", coordinates: [-70.6693, -33.4489] },
+  { markerOffset: 25, name: "Bogota", coordinates: [-74.0721, 4.711] },
+  { markerOffset: 25, name: "Quito", coordinates: [-78.4678, -0.1807] },
+  { markerOffset: -15, name: "Georgetown", coordinates: [-58.1551, 6.8013] },
+  { markerOffset: -15, name: "Asuncion", coordinates: [-57.5759, -25.2637] },
+  { markerOffset: 25, name: "Paramaribo", coordinates: [-55.2038, 5.852] },
+  { markerOffset: 25, name: "Montevideo", coordinates: [-56.1645, -34.9011] },
+  { markerOffset: -15, name: "Caracas", coordinates: [-66.9036, 10.4806] },
+  { markerOffset: -15, name: "Lima", coordinates: [-77.0428, -12.0464] }
+];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<ApiResponse>('http://localhost/api/healthcheck');
+        setData(response.data);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          setError(error);
+        } else {
+          setError(new Error("An unexpected error occurred") as AxiosError);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen border-2 border-red-500 flex-col items-center justify-between p-24">
+      <div className="w-screen h-screen">
+      <ComposableMap>
+      <Geographies geography={geoUrl}>
+        {({ geographies }) =>
+          geographies.map((geo) => (
+            <Geography key={geo.rsmKey} geography={geo} />
+          ))
+        }
+      </Geographies>
+      {markers.map(({ name, coordinates, markerOffset }) => (
+  <Marker 
+  key={name} 
+  coordinates={coordinates as [number, number]}
+  onMouseEnter={() => setHoveredMarker(name)}
+  onMouseLeave={() => setHoveredMarker(null)}
+  onClick={() => setSelectedMarker(name)}
+>
+  <circle r={6} fill={hoveredMarker === name ? "#00F" : "#F00"} stroke="#fff" strokeWidth={2} />
+  <text
+    textAnchor="middle"
+    y={markerOffset}
+    style={{ fontFamily: "system-ui", fill: "#5D5A6D" }}
+  >
+    {name}
+  </text>
+</Marker>
+))}
+    </ComposableMap>
+
+      </div>
+      {selectedMarker && (
+        <div className="marker-info">
+          <p>Selected Marker: {selectedMarker}</p>
+          {/* Aquí puedes agregar más información o componentes adicionales según sea necesario */}
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      )}
     </main>
   );
 }
